@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INTINI SYSTEM | Protected</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bg: '#010101',
+                        panel: '#0A0A0E',
+                        primary: '#2DD4BF', // Teal (Dashboard)
+                        hackRed: '#FF003C', // Hacker Red (Login)
+                        hackWhite: '#E0E0E0',
+                        accent: '#38BDF8',
+                        success: '#34D399',
+                        gold: '#FBBF24',
+                        danger: '#FB7185',
+                        push: '#A78BFA',
+                        textDim: '#64748B'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['"Space Mono"', 'monospace']
+                    },
+                    animation: {
+                        'glitch': 'glitch 1s linear infinite',
+                        'scanline': 'scanline 8s linear infinite'
+                    },
+                    keyframes: {
+                        glitch: {
+                            '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
+                            '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
+                            '62%': { transform: 'translate(0,0) skew(5deg)' }
+                        },
+                        scanline: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100%)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #010101; color: #E5E5E5; overflow: hidden; }
+
+        /* === HACKER LOGIN STYLES === */
+        #login-screen {
+            background-color: #000;
+            z-index: 9999;
+            font-family: 'Space Mono', monospace;
+            overflow: hidden;
+            position: fixed; inset: 0;
+        }
+
+        /* Effetto CRT Scanlines */
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            position: absolute; inset: 0; pointer-events: none; z-index: 10;
+        }
+        
+        /* Titolo Glitchato */
+        .glitch-text {
+            position: relative;
+            color: white;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        .glitch-text::before {
+            left: 2px; text-shadow: -1px 0 #ff003c; clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            left: -2px; text-shadow: -1px 0 #00f3ff; clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(14px, 9999px, 122px, 0); }
+            100% { clip: rect(45px, 9999px, 160px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(65px, 9999px, 100px, 0); }
+            100% { clip: rect(125px, 9999px, 10px, 0); }
+        }
+
+        /* Input Hacker */
+        .hacker-input {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid #333;
+            color: #FF003C;
+            font-family: 'Space Mono', monospace;
+            font-size: 24px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .hacker-input:focus { border-bottom-color: #FF003C; }
+        .hacker-input::placeholder { color: #444; font-size: 14px; letter-spacing: 2px; }
+
+        .hacker-btn {
+            background: #111; color: #fff; border: 1px solid #333;
+            font-family: 'Space Mono', monospace; text-transform: uppercase;
+            letter-spacing: 2px; font-size: 10px; padding: 15px 30px;
+            transition: all 0.2s; cursor: pointer;
+        }
+        .hacker-btn:hover { background: #FF003C; color: black; border-color: #FF003C; font-weight: bold; box-shadow: 0 0 20px #FF003C; }
+
+        /* === DASHBOARD STYLES (Il "Bello" di prima) === */
+        .tech-bg {
+            position: absolute; inset: 0; z-index: -1;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        }
+
+        .deep-card {
+            background: rgba(14, 14, 18, 0.65);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .deep-card:hover { border-color: rgba(255, 255, 255, 0.15); box-shadow: 0 10px 40px rgba(0,0,0,0.6); transform: translateY(-2px); }
+        
+        .label-tech { font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #6B7280; font-weight: 700; }
+        .deep-input { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: white; font-family: 'Space Mono', monospace; }
+        .deep-input:focus { outline: none; border-color: #06B6D4; background: rgba(6, 182, 212, 0.05); }
+
+        .tech-check input:checked + div { background: #06B6D4; border-color: #06B6D4; box-shadow: 0 0 12px rgba(6, 182, 212, 0.5); }
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 8px; background: #10B981; border: 1px solid #fff; border-radius: 2px; cursor: pointer; margin-top: -6px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #2A2A35; border-radius: 2px; }
+        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+        .mood-btn.active { opacity: 1 !important; transform: scale(1.1); background: rgba(255,255,255,0.15); filter: grayscale(0) !important; border: 1px solid rgba(255,255,255,0.3); }
+
+        #app-content { filter: blur(20px); opacity: 0; transition: all 1.5s ease-out; }
+        body.unlocked #app-content { filter: blur(0); opacity: 1; }
+    </style>
+</head>
+<body class="h-screen relative font-sans">
+
+    <div id="login-screen" class="flex flex-col items-center justify-center">
+        <div class="scanlines"></div>
+        
+        <div class="relative z-20 text-center">
+            <div class="mb-10 relative">
+                <i class="fa-solid fa-shield-halved text-6xl text-hackRed animate-pulse drop-shadow-[0_0_20px_rgba(255,0,60,0.8)]"></i>
+            </div>
+
+            <h1 class="glitch-text text-4xl md:text-6xl mb-2" data-text="INTINI SYSTEM">INTINI SYSTEM</h1>
+            <p class="text-gray-500 text-xs uppercase tracking-[0.5em] mb-12">Restricted Access // Level 5</p>
+
+            <div class="w-72 mx-auto relative">
+                <input type="password" id="password-field" class="hacker-input w-full p-2 mb-8" placeholder="ENTER PASSCODE">
+                <div id="cursor" class="absolute right-2 top-2 w-2 h-6 bg-hackRed animate-pulse hidden"></div>
+            </div>
+
+            <button onclick="checkPassword()" class="hacker-btn group">
+                <span class="group-hover:hidden">DECRYPT</span>
+                <span class="hidden group-hover:block">ACCESS GRANTED</span>
+            </button>
+            
+            <p id="error-msg" class="text-hackRed font-mono text-xs mt-6 opacity-0 tracking-widest">>> ERROR: INVALID CREDENTIALS</p>
+            
+            <div class="fixed bottom-4 left-0 w-full text-center">
+                <p class="text-[9px] text-gray-700 font-mono">IP: 192.168.X.X // SESSION: ENCRYPTED</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-content" class="h-full flex flex-col p-4 md:p-6 gap-5 hidden">
+        <div class="tech-bg"></div>
+
+        <header class="flex justify-between items-end pb-3 border-b border-white/5 relative z-20 pt-4"> 
+            <div class="flex items-center gap-5">
+                <div class="relative w-12 h-12 rounded-xl bg-black border border-white/10 flex items-center justify-center shadow-2xl group overflow-hidden mt-2"> 
+                    <div class="absolute inset-0 bg-primary/10 blur-xl group-hover:bg-primary/20 transition duration-500"></div>
+                    <i class="fa-solid fa-chart-line text-primary text-xl relative z-10 drop-shadow-[0_0_8px_rgba(45,212,191,0.8)]"></i>
+                </div>
+                
+                <div class="mt-2"> 
+                    <h1 class="text-4xl font-black tracking-tighter text-white leading-none flex items-center gap-1">
+                        INTINI<span class="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">SYSTEM</span>
+                    </h1>
+                    <div class="flex items-center gap-2 mt-2">
+                        <div class="h-0.5 w-8 bg-gradient-to-r from-primary to-transparent rounded-full"></div>
+                        <p class="text-[9px] font-mono text-gray-500 uppercase tracking-[0.3em] font-bold">DeepCharts Ultimate</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-1 bg-black/60 border border-white/10 rounded-xl p-1.5 backdrop-blur-xl">
+                <button onclick="changeMonth(-1)" class="w-9 h-9 flex items-center justify-center text-textDim hover:text-white hover:bg-white/10 rounded-lg transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                <div id="month-display" class="w-40 text-center font-mono font-bold text-sm text-white uppercase tracking-widest"></div>
+                <button onclick="changeMonth(1)" class="w-9 h-9 flex items-center justify-center text-textDim hover:text-white hover:bg-white/10 rounded-lg transition"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                <div class="w-px h-5 bg-white/10 mx-2"></div>
+                <button onclick="setToday()" class="px-4 h-9 text-[10px] font-bold text-black bg-primary hover:bg-white transition rounded-lg uppercase tracking-wide">Today</button>
+            </div>
+        </header>
+
+        <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden relative z-10 pt-2">
+
+            <aside class="lg:col-span-3 flex flex-col gap-5 overflow-y-auto pr-2 pb-2 custom-scroll">
+                <div class="deep-card p-5">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="label-tech text-accent">Active Date</span>
+                        <div class="flex gap-1"><span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span></div>
+                    </div>
+                    <div class="flex justify-between items-center bg-black/40 border border-white/5 rounded-xl p-3">
+                        <button onclick="changeDay(-1)" class="w-8 h-8 rounded-lg hover:bg-white/10 text-textDim hover:text-white transition"><i class="fa-solid fa-arrow-left"></i></button>
+                        <div class="text-center">
+                            <div id="day-name" class="text-[9px] text-gray-500 font-bold uppercase tracking-[0.2em] mb-0.5"></div>
+                            <div id="day-num" class="text-3xl font-mono font-bold text-white leading-none"></div>
+                        </div>
+                        <button onclick="changeDay(1)" class="w-8 h-8 rounded-lg hover:bg-white/10 text-textDim hover:text-white transition"><i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <div class="deep-card p-6 flex-1 flex flex-col gap-6">
+                    <div class="border-b border-white/5 pb-3"><span class="label-tech text-white">Protocol Inputs</span></div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="label-tech">Checklist</span>
+                            <button onclick="toggleEdit()" class="text-[9px] text-primary hover:text-white"><i class="fa-solid fa-pen-to-square"></i></button>
+                        </div>
+                        <div id="habit-editor" class="hidden mb-3 p-2 bg-black/40 border border-white/5 rounded-lg">
+                            <div class="flex gap-2 mb-2"><input id="new-habit" class="deep-input w-full p-1.5 text-xs" placeholder="New habit..."><button onclick="addHabit()" class="text-success font-bold px-2 hover:bg-white/5 rounded">+</button></div><div id="editor-list" class="max-h-24 overflow-y-auto space-y-1"></div>
+                        </div>
+                        <div id="habit-list" class="space-y-2.5"></div>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><span class="label-tech block mb-2 text-gold">Income (€)</span><input type="number" id="input-money" class="deep-input w-full p-2.5 pl-8 text-gold font-bold text-right text-sm" placeholder="0" oninput="saveData()"></div>
+                            <div><span class="label-tech block mb-2 text-primary">Sleep (h)</span><input type="number" id="input-sleep" class="deep-input w-full p-2.5 pl-8 text-primary font-bold text-right text-sm" placeholder="0" oninput="saveData()"></div>
+                        </div>
+                        <div><div class="flex justify-between mb-2"><span class="label-tech text-success">Push Intensity</span><span id="push-val" class="text-xs font-mono text-white">0</span></div><input type="range" id="input-push" min="0" max="10" step="1" class="w-full" oninput="updatePushVal(); saveData()"></div>
+                        <div>
+                            <span class="label-tech block mb-3 text-white">Mental State</span>
+                            <div class="grid grid-cols-5 gap-2">
+                                <button onclick="setMood(1)" id="m1" class="mood-btn h-9 rounded-lg border border-transparent bg-white/5 text-sm grayscale opacity-40 hover:opacity-100">💀</button>
+                                <button onclick="setMood(2)" id="m2" class="mood-btn h-9 rounded-lg border border-transparent bg-white/5 text-sm grayscale opacity-40 hover:opacity-100">👎</button>
+                                <button onclick="setMood(3)" id="m3" class="mood-btn h-9 rounded-lg border border-transparent bg-white/5 text-sm grayscale opacity-40 hover:opacity-100">👌</button>
+                                <button onclick="setMood(4)" id="m4" class="mood-btn h-9 rounded-lg border border-transparent bg-white/5 text-sm grayscale opacity-40 hover:opacity-100">👍</button>
+                                <button onclick="setMood(5)" id="m5" class="mood-btn h-9 rounded-lg border border-transparent bg-white/5 text-sm grayscale opacity-40 hover:opacity-100">🔥</button>
+                            </div>
+                            <input type="hidden" id="input-mood">
+                        </div>
+                    </div>
+                </div>
+                <div class="deep-card p-4"><textarea id="input-notes" class="w-full bg-transparent text-xs font-mono text-gray-400 border-none focus:outline-none resize-none h-10" placeholder="// System Log..." oninput="saveData()"></textarea></div>
+            </aside>
+
+            <section class="lg:col-span-9 flex flex-col gap-6 overflow-y-auto pr-2 pb-4">
+                <div class="grid grid-cols-4 gap-5">
+                    <div class="deep-card p-6"><div class="label-tech text-gray-400 mb-2">Consistency</div><div id="kpi-cons" class="text-4xl font-mono font-bold text-white">0%</div></div>
+                    <div class="deep-card p-6"><div class="label-tech text-gray-400 mb-2">Net Income</div><div id="kpi-inc" class="text-4xl font-mono font-bold text-white">0</div></div>
+                    <div class="deep-card p-6"><div class="label-tech text-gray-400 mb-2">Push Avg</div><div id="kpi-push" class="text-4xl font-mono font-bold text-white">0.0</div></div>
+                    <div class="deep-card p-6"><div class="label-tech text-gray-400 mb-2">Streak</div><div id="kpi-streak" class="text-4xl font-mono font-bold text-white">0</div></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-[500px]">
+                    <div class="deep-card p-6 flex flex-col"><div class="label-tech text-white mb-6"><span class="w-1.5 h-1.5 rounded-full bg-accent inline-block mr-2"></span>Protocol Adherence</div><div class="flex-1 w-full relative"><canvas id="chartCons"></canvas></div></div>
+                    <div class="deep-card p-6 flex flex-col"><div class="label-tech text-white mb-6"><span class="w-1.5 h-1.5 rounded-full bg-gold inline-block mr-2"></span>Income Stream</div><div class="flex-1 w-full relative"><canvas id="chartMoney"></canvas></div></div>
+                    <div class="deep-card p-6 flex flex-col"><div class="label-tech text-white mb-6"><span class="w-1.5 h-1.5 rounded-full bg-primary inline-block mr-2"></span>Sleep Cycles</div><div class="flex-1 w-full relative"><canvas id="chartSleep"></canvas></div></div>
+                    <div class="deep-card p-6 flex flex-col"><div class="label-tech text-white mb-6"><span class="w-1.5 h-1.5 rounded-full bg-success inline-block mr-2"></span>Bio-Metrics</div><div class="flex-1 w-full relative"><canvas id="chartPush"></canvas></div></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // === PASSWORD SYSTEM (HACKER STYLE) ===
+        const APP_PASS = "Allaseralaggiunella27"; // PASSWORD AGGIORNATA
+
+        document.getElementById('password-field').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') checkPassword();
+        });
+
+        function checkPassword() {
+            const input = document.getElementById('password-field');
+            const screen = document.getElementById('login-screen');
+            const error = document.getElementById('error-msg');
+            const app = document.getElementById('app-content');
+
+            if(input.value === APP_PASS) {
+                // Hacking effect out
+                screen.style.transition = "transform 0.5s ease-in-out, opacity 0.5s";
+                screen.style.transform = "scaleY(0)";
+                screen.style.opacity = "0";
+                
+                app.classList.remove('hidden');
+                setTimeout(() => {
+                    document.body.classList.add('unlocked');
+                    screen.style.display = 'none';
+                }, 500);
+            } else {
+                // Access Denied
+                input.value = "";
+                input.placeholder = "ACCESS DENIED";
+                error.style.opacity = '1';
+                setTimeout(() => { 
+                    error.style.opacity = '0'; 
+                    input.placeholder = "ENTER PASSCODE";
+                }, 2000);
+            }
+        }
+
+        // === APP LOGIC ===
+        const DEFAULT_HABITS = ["WAKE UP 07:00", "DEEP WORK 4H", "TRAINING", "READING 10 PAGES", "NO SHIT SUGAR", "4H RIPETIZIONI"];
+        let state = {
+            date: new Date(),
+            habits: JSON.parse(localStorage.getItem('intiniHabits')) || DEFAULT_HABITS,
+            data: JSON.parse(localStorage.getItem('intiniData')) || {},
+            charts: {}
+        };
+        const getKey = (d) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        function init() {
+            if (Object.keys(state.data).length === 0) injectDummyData();
+            updateDateUI(); loadData();
+        }
+
+        function injectDummyData() {
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth();
+            const dummy = [
+                { d: 1, inc: 50, slp: 7.0, push: 6, mood: 3, hCount: 3 },
+                { d: 2, inc: 120, slp: 6.5, push: 8, mood: 4, hCount: 4 },
+                { d: 3, inc: 0, slp: 8.0, push: 5, mood: 3, hCount: 5 },
+                { d: 4, inc: 250, slp: 5.5, push: 9, mood: 5, hCount: 6 },
+                { d: 5, inc: 80, slp: 7.5, push: 7, mood: 4, hCount: 5 },
+                { d: 6, inc: 0, slp: 7.0, push: 6, mood: 3, hCount: 4 }
+            ];
+            dummy.forEach(item => {
+                const key = getKey(new Date(currentYear, currentMonth, item.d));
+                state.data[key] = { checked: state.habits.slice(0, item.hCount), money: item.inc, sleep: item.slp, push: item.push, mood: item.mood, notes: "Init..." };
+            });
+            localStorage.setItem('intiniData', JSON.stringify(state.data));
+        }
+
+        function loadData() {
+            const key = getKey(state.date);
+            const d = state.data[key] || { checked: [], sleep: '', money: '', notes: '', push: 0, mood: 0 };
+            document.getElementById('input-money').value = d.money;
+            document.getElementById('input-sleep').value = d.sleep;
+            document.getElementById('input-notes').value = d.notes;
+            document.getElementById('input-push').value = d.push || 0;
+            document.getElementById('push-val').innerText = d.push || 0;
+            setMood(d.mood || 0);
+            renderHabits(d.checked);
+            updateCharts(); updateKPIs();
+        }
+
+        function saveData() {
+            const key = getKey(state.date);
+            const checked = [];
+            state.habits.forEach((h, i) => { if(document.getElementById(`h-${i}`)?.checked) checked.push(h); });
+            state.data[key] = {
+                checked,
+                money: document.getElementById('input-money').value,
+                sleep: document.getElementById('input-sleep').value,
+                notes: document.getElementById('input-notes').value,
+                push: document.getElementById('input-push').value,
+                mood: document.getElementById('input-mood').value
+            };
+            localStorage.setItem('intiniData', JSON.stringify(state.data));
+            updateCharts(); updateKPIs();
+        }
+
+        function renderHabits(checked) {
+            const list = document.getElementById('habit-list');
+            const editor = document.getElementById('editor-list');
+            list.innerHTML = ''; editor.innerHTML = '';
+            state.habits.forEach((h, i) => {
+                const isC = checked.includes(h);
+                list.innerHTML += `<label class="tech-check flex items-center gap-3 cursor-pointer group p-2.5 rounded-lg hover:bg-white/5 transition border border-transparent hover:border-white/5"><div class="relative w-4 h-4 flex-shrink-0"><input type="checkbox" id="h-${i}" class="sr-only" onchange="saveData()" ${isC ? 'checked' : ''}><div class="w-4 h-4 border border-white/20 rounded-[4px] bg-black transition-all"></div></div><span class="text-[10px] font-mono text-textDim group-hover:text-white uppercase tracking-wide transition-colors ${isC ? 'text-white font-bold' : ''}">${h}</span></label>`;
+                editor.innerHTML += `<div class="flex justify-between text-[10px] text-gray-400 border-b border-white/5 py-1 font-mono"><span>${h}</span><button onclick="remHabit(${i})" class="text-danger hover:text-white transition">X</button></div>`;
+            });
+        }
+        function toggleEdit() { document.getElementById('habit-editor').classList.toggle('hidden'); }
+        function addHabit() { const v = document.getElementById('new-habit').value.trim(); if(v){ state.habits.push(v.toUpperCase()); localStorage.setItem('intiniHabits', JSON.stringify(state.habits)); loadData(); document.getElementById('new-habit').value=''; }}
+        function remHabit(i) { state.habits.splice(i,1); localStorage.setItem('intiniHabits', JSON.stringify(state.habits)); loadData(); }
+
+        function updateDateUI() {
+            const d = state.date;
+            document.getElementById('month-display').innerText = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            document.getElementById('day-name').innerText = d.toLocaleDateString('en-US', { weekday: 'long' });
+            document.getElementById('day-num').innerText = d.getDate();
+        }
+        function changeDay(n) { state.date.setDate(state.date.getDate()+n); updateDateUI(); loadData(); }
+        function changeMonth(n) { state.date.setMonth(state.date.getMonth()+n); state.date.setDate(1); updateDateUI(); loadData(); }
+        function setToday() { state.date = new Date(); updateDateUI(); loadData(); }
+        function updatePushVal() { document.getElementById('push-val').innerText = document.getElementById('input-push').value; }
+        
+        function setMood(v) { 
+            document.getElementById('input-mood').value = v; 
+            highlightMood(v); 
+            saveData(); 
+        }
+        function highlightMood(v) { 
+            document.querySelectorAll('.mood-btn').forEach(b => { 
+                b.classList.remove('active', 'border-white/40', 'bg-white/20', 'grayscale-0', 'opacity-100'); 
+                b.classList.add('opacity-40', 'grayscale', 'border-transparent'); 
+            }); 
+            if(v > 0) {
+                const el = document.getElementById(`m${v}`); 
+                if(el){ 
+                    el.classList.remove('opacity-40', 'grayscale', 'border-transparent'); 
+                    el.classList.add('active', 'border-white/40', 'bg-white/20', 'grayscale-0', 'opacity-100'); 
+                }
+            }
+        }
+
+        function updateKPIs() {
+            const y = state.date.getFullYear(), m = state.date.getMonth(), days = new Date(y, m+1, 0).getDate();
+            let tc=0, ti=0, tp=0, c=0, th=state.habits.length||1;
+            for(let i=1; i<=days; i++) {
+                const k = getKey(new Date(y, m, i));
+                const d = state.data[k];
+                if(d) { c++; tc+=(d.checked?.length||0); ti+=parseFloat(d.money)||0; tp+=parseFloat(d.push)||0; }
+            }
+            document.getElementById('kpi-cons').innerText = c ? Math.round((tc/(c*th))*100)+'%' : '0%';
+            document.getElementById('kpi-inc').innerText = ti.toLocaleString('en-US');
+            document.getElementById('kpi-push').innerText = c ? (tp/c).toFixed(1) : '0.0';
+            
+            let s=0, cd=new Date();
+            while(true) {
+                const k = getKey(cd);
+                const d = state.data[k];
+                if(d && d.checked?.length >= th/2) { s++; cd.setDate(cd.getDate()-1); } else break;
+            }
+            document.getElementById('kpi-streak').innerText = s;
+        }
+
+        function updateCharts() {
+            const y = state.date.getFullYear(), m = state.date.getMonth(), daysInMonth = new Date(y, m+1, 0).getDate();
+            let lastDayWithData = 0;
+            for(let i=1; i<=daysInMonth; i++) {
+                 const k = getKey(new Date(y, m, i));
+                 if(state.data[k]) lastDayWithData = i;
+            }
+            
+            const labels=[], cData=[], mData=[], sData=[], pData=[], moodData=[];
+            const totalH = state.habits.length || 1;
+
+            for(let i=1; i<=daysInMonth; i++) {
+                labels.push(i);
+                if (i > lastDayWithData) {
+                    cData.push(null); mData.push(null); sData.push(null); pData.push(null); moodData.push(null);
+                    continue;
+                }
+                const k = getKey(new Date(y, m, i));
+                const d = state.data[k];
+                if(d) {
+                    cData.push(Math.round(((d.checked?.length||0)/totalH)*100));
+                    mData.push(parseFloat(d.money)||0);
+                    sData.push(parseFloat(d.sleep)||0);
+                    pData.push(parseFloat(d.push)||0);
+                    moodData.push(parseFloat(d.mood)||0);
+                } else { 
+                    cData.push(0); mData.push(0); sData.push(0); pData.push(0); moodData.push(0); 
+                }
+            }
+
+            renderChart('chartCons', labels, cData, '#38BDF8', 'line', true);
+            renderChart('chartMoney', labels, mData, '#FBBF24', 'bar', false);
+            renderChart('chartSleep', labels, sData, '#2DD4BF', 'line', true);
+            renderChart('chartPush', labels, pData, '#34D399', 'line', false, moodData);
+        }
+
+        function renderChart(id, labels, data, color, type, fill, data2=null) {
+            const ctx = document.getElementById(id).getContext('2d');
+            if(state.charts[id]) state.charts[id].destroy();
+
+            let bg = color;
+            if(fill && type === 'line') {
+                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, hexToRgbA(color, 0.5));
+                gradient.addColorStop(1, hexToRgbA(color, 0));
+                bg = gradient;
+            }
+
+            const datasets = [{
+                label: 'Value', data: data,
+                borderColor: color, backgroundColor: bg,
+                borderWidth: 2, pointRadius: 0, hoverRadius: 6, fill: fill, tension: 0.3,
+                spanGaps: false 
+            }];
+
+            if(data2) {
+                datasets.push({
+                    label: 'Mood', data: data2,
+                    borderColor: '#FB7185', borderDash: [3,3], borderWidth: 1, pointRadius:0, tension:0.4, yAxisID: 'y1'
+                });
+            }
+
+            state.charts[id] = new Chart(ctx, {
+                type: type,
+                data: { labels, datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: {display: false}, tooltip: {backgroundColor: '#0A0A0E', borderColor: '#333', borderWidth: 1, titleFont: {family: 'Space Mono'}, bodyFont: {family: 'Space Mono'}} },
+                    scales: {
+                        x: { grid: {color: 'rgba(255,255,255,0.03)'}, ticks: {color: '#64748B', font:{size:9, family:'Space Mono'}} },
+                        y: { beginAtZero: true, grid: {color: 'rgba(255,255,255,0.03)'}, ticks: {color: '#64748B', font:{size:9, family:'Space Mono'}} },
+                        y1: { display: !!data2, position: 'right', grid:{display:false} }
+                    }
+                }
+            });
+        }
+        
+        function hexToRgbA(hex, alpha){
+            let c;
+            if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+                c= hex.substring(1).split('');
+                if(c.length== 3){ c= [c[0], c[0], c[1], c[1], c[2], c[2]]; }
+                c= '0x'+c.join('');
+                return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+alpha+')';
+            }
+            return hex;
+        }
+
+        init();
+    </script>
+</body>
+</html>
